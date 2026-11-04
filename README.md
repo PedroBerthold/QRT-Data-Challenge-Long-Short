@@ -22,7 +22,8 @@ From the repo root, in order:
 | `experiments/02_target_encoding.py` | Tests whether each allocation has a persistent drift |
 | `experiments/03_feature_blocks.py` | Adds feature blocks one at a time |
 | `experiments/04_objective.py` | Compares MSE regression vs binary classification, plus regularisation |
-| `experiments/05_submission.py` | Trains on the full train set and writes `submissions/<name>.csv` |
+| `experiments/05_submission.py` | Trains the chosen model (`MODEL` = B, D, ensemble or benchmark) on the full train set and writes `submissions/<MODEL>.csv` |
+| `experiments/06_ensemble.py` | Combines the two best settings of step 4 (binary + TE, target/vol + strong reg + TE) |
 | `experiments/10_leak_validate.py` | Measures the look-ahead leak inside the train set (see findings) |
 | `experiments/11_leak_test.py` | Checks whether the same leak exists for test rows |
 | `experiments/12_leak_submission.py` | Submission built only from the leak method, to read its real accuracy on the leaderboard |
