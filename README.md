@@ -25,6 +25,7 @@ From the repo root, in order:
 | `experiments/05_submission.py` | Trains on the full train set and writes `submissions/<name>.csv` |
 | `experiments/10_leak_validate.py` | Measures the look-ahead leak inside the train set (see findings) |
 | `experiments/11_leak_test.py` | Checks whether the same leak exists for test rows |
+| `experiments/12_leak_submission.py` | Submission built only from the leak method, to read its real accuracy on the leaderboard |
 
 Full-mode scores are appended to `results/results.csv`. Figures are saved in `figures/<experiment>/` and opened at the end of each script (`SHOW=0` to only save them).
 
