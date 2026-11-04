@@ -23,6 +23,7 @@ From the repo root, in order:
 | `experiments/03_feature_blocks.py` | Adds feature blocks one at a time |
 | `experiments/04_objective.py` | Compares MSE regression vs binary classification, plus regularisation |
 | `experiments/05_submission.py` | Trains the chosen model (`MODEL` = B, D, ensemble or benchmark) on the full train set and writes `submissions/<MODEL>.csv` |
+| `experiments/07_two_stage.py` | Market model on one row per date + relative model per allocation, additive (V1) or stacked into B (V2) |
 | `experiments/06_ensemble.py` | Combines the two best settings of step 4 (binary + TE, target/vol + strong reg + TE) |
 | `experiments/10_leak_validate.py` | Measures the look-ahead leak inside the train set (see findings) |
 | `experiments/11_leak_test.py` | Checks whether the same leak exists for test rows |
