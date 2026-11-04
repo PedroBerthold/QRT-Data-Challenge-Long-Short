@@ -11,7 +11,9 @@ from src.log import log_result
 from src import plots
 
 EXP = "01_benchmark"
+print("Loading data...", flush=True)
 X, y = train_data()
+print(f"{len(X):,} rows loaded. Building features...", flush=True)
 F = build(X, ("raw", "benchmark"))
 cols = list(F.columns)
 seg = load_segments()

@@ -1,4 +1,5 @@
 """Cross-validation by groups of dates. All rows of a date stay in the same fold."""
+import time
 from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
@@ -68,6 +69,8 @@ def cv_lgbm(F: pd.DataFrame, y: pd.Series, cols, folds, params=None,
     yv = np.asarray(y)
     oof = np.zeros(len(yv))
     scores, imps, shaps = [], {}, {}
+    t0 = time.time()
+    print(f"[{label}] training {len(folds)} folds, {len(cols)} features, {rounds} trees...", flush=True)
     for k, (tr, va) in enumerate(folds):
         Ftr, Fva = F.iloc[tr][cols], F.iloc[va][cols]
         if fold_features is not None:
@@ -79,6 +82,7 @@ def cv_lgbm(F: pd.DataFrame, y: pd.Series, cols, folds, params=None,
         pred = model.predict(Fva)
         oof[va] = pred
         scores.append(accuracy(pred, yv[va], thr))
+        print(f"  fold {k + 1}/{len(folds)}: acc {scores[-1] * 100:.2f}%  ({time.time() - t0:.0f}s elapsed)", flush=True)
         imps[f"fold{k + 1}"] = pd.Series(model.feature_importance("gain"), index=Ftr.columns)
         if shap_sample:
             sample = Fva.sample(min(shap_sample, len(Fva)), random_state=0)
