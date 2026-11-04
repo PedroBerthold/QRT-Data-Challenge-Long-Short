@@ -17,13 +17,36 @@ From the repo root, in order:
 | Script | What it does |
 |---|---|
 | `experiments/00_build_segments.py` | Rebuilds the chronological order of the shuffled dates (needed for segment CV) |
+| `experiments/00b_eda.py` | Looks at the data: target distribution, per-allocation drift, missing values, feature correlations |
 | `experiments/01_benchmark.py` | Reproduces the benchmark, compares random-date CV vs segment CV |
 | `experiments/02_target_encoding.py` | Tests whether each allocation has a persistent drift |
 | `experiments/03_feature_blocks.py` | Adds feature blocks one at a time |
 | `experiments/04_objective.py` | Compares MSE regression vs binary classification, plus regularisation |
 | `experiments/05_submission.py` | Trains on the full train set and writes `submissions/<name>.csv` |
 
-Full-mode scores are appended to `results/results.csv`.
+Full-mode scores are appended to `results/results.csv`. Figures are saved in `figures/<experiment>/` and opened at the end of each script (`SHOW=0` to only save them).
+
+## Figures
+
+| Figure | Question it answers |
+|---|---|
+| `fold_scores` | Accuracy per fold for each model, against the "always predict 1" line. Is a gain consistent across periods? |
+| `importance_shap` | Which features move the predictions, averaged over folds. Bars = min/max across folds: a long bar means the feature matters only in some periods |
+| `confidence` | Accuracy by decile of prediction strength. If the model knows when it is right, the right-hand deciles are higher |
+| `errors` | Accuracy per period, per GROUP and per allocation (grey band = what pure chance would give) |
+| `market_timing` | Per date, share predicted 1 vs share actually positive. Shows whether the model mostly bets on the whole market's direction |
+| `compare` | Accuracy difference between two models, date by date |
+| `coefs` | Coefficients of the logistic regression on standardised features |
+
+## Is B really better than A?
+
+`src/stats.compare` prints three numbers for two models evaluated on the same folds:
+
+- `delta_pts`: difference in mean CV accuracy.
+- `fold_wins` and `p_folds_by_chance`: on how many folds B beats A, and how likely that is if both models were equally good. 5/5 happens by chance 3% of the time, 4/5 or better 19%.
+- `t_stat_per_date`: paired t-statistic on the per-date accuracy difference (about 2,500 dates). Above ~2, the gain is unlikely to be noise.
+
+Keep a change only if the gain is positive on most folds and the t-stat is around 2 or more.
 
 `QUICK=1 python experiments/01_benchmark.py` runs on 20% of dates with 100 trees as a smoke test. Those numbers are not meaningful.
 
@@ -46,4 +69,4 @@ Full-mode scores are appended to `results/results.csv`.
 
 - All rows of a date stay in the same fold (rows of one date share the same market move).
 - Anything fitted on the target (target encoding, scaling fitted on y) is computed inside the training fold only.
-- A gain below ~0.3 pt is within noise: check that it holds on most folds.
+- Use `src/stats.compare` before keeping a change (see above).
