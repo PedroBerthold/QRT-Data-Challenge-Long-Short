@@ -23,6 +23,8 @@ From the repo root, in order:
 | `experiments/03_feature_blocks.py` | Adds feature blocks one at a time |
 | `experiments/04_objective.py` | Compares MSE regression vs binary classification, plus regularisation |
 | `experiments/05_submission.py` | Trains on the full train set and writes `submissions/<name>.csv` |
+| `experiments/10_leak_validate.py` | Measures the look-ahead leak inside the train set (see findings) |
+| `experiments/11_leak_test.py` | Checks whether the same leak exists for test rows |
 
 Full-mode scores are appended to `results/results.csv`. Figures are saved in `figures/<experiment>/` and opened at the end of each script (`SHOW=0` to only save them).
 
@@ -60,7 +62,8 @@ Keep a change only if the gain is positive on most folds and the t-stat is aroun
 
 ## Findings so far
 
-- **Date order is recoverable, test is not linked to train.** Dates are shuffled, but `RET_2..RET_7` at day t+1 matches `RET_1..RET_6` at day t up to small noise (median similarity 0.98). The train rebuilds into 40 chronological segments. None of the 120 test dates links to any other date, so there is no target leakage and the test covers a separate period.
+- **Date order is recoverable inside the train set.** Dates are shuffled, but `RET_2..RET_7` at day t+1 matches `RET_1..RET_6` at day t up to small noise (median similarity 0.98). The train rebuilds into 40 chronological segments.
+- **Look-ahead leak inside train, not usable on test.** The row of day t+k holds the target of day t (in `RET_k`). Inside the train, finding that row by history matching recovers the sign of the target about 85% of the time. Test rows behave exactly like queries with no true match (best similarity ~0.85 with 19 lags, vs ~0.99 for train rows): their continuation is not in the files. The 0.78-0.82 public scores therefore come from something not identified yet.
 - **Segment CV vs random-date CV.** The benchmark scores about 52.1-52.2% under both schemes. Segment CV is much less stable across folds (±0.56 vs ±0.07), so the gap to the 50.8% leaderboard score is mostly a regime effect, not CV leakage.
 - **The leaderboard is noisy.** With 31,870 test rows, the standard error of the accuracy is about 0.28 pt. Select models on CV, not on public LB.
 - **Date-level timing has a low ceiling.** Even knowing the majority sign of each date perfectly only gives 57% accuracy.
