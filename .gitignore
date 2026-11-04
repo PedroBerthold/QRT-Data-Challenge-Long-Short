@@ -1,0 +1,10 @@
+# Challenge data must not be published
+data/
+*.csv
+*.parquet
+*.pq
+!results/*.csv
+__pycache__/
+.ipynb_checkpoints/
+.venv/
+submissions/
