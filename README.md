@@ -14,11 +14,10 @@ Each row is one portfolio ("allocation") on one day, with its last 20 daily retu
 | Look-ahead leak, measured by cross-validation on the train set | **89.4%** |
 | Same leak applied to the test set (public LB) | 50.08% |
 
-Three things I learned doing this:
+Two things I learned doing this:
 
 1. **There is a look-ahead leak in the training data worth ~89% accuracy**, but it does not exist in the test set. I measured both, then confirmed it on the leaderboard.
-2. **The public leaderboard (top scores ~0.80) is very likely inflated by probing.** Scores come back with 16 decimals, which gives the exact number of correct rows on every submission.
-3. **The real signal is small and comes from the allocations, not from the market.** Predicting tomorrow's market direction is a coin flip here (51.8% of days right). The edge comes from telling, on a given day, which allocations will do better than others.
+2. **The real signal is small and comes from the allocations, not from the market.** Predicting tomorrow's market direction is a coin flip here (51.8% of days right). The edge comes from telling, on a given day, which allocations will do better than others.
 
 ---
 
@@ -107,21 +106,8 @@ The future of the test rows is simply not in the files.
 
 ![Leak on test](docs/img/leak_test_check.png)
 
-## 4. The leaderboard
+## 4. Doubts and limits
 
-The public LB has dozens of scores between 0.78 and 0.82, all posted after June 2026. The last private ranking (June 15) topped out at 55.0%, with 53% from the 3rd place down.
-
-My best explanation is **leaderboard probing**, not a data leak:
-- my leak-only submission scored 0.5008471917163476 = exactly **7,981 / 15,935**. The public half of the test has 15,935 rows and every submission returns the exact number of correct rows,
-- submissions are unlimited, so flipping the predictions of one date and reading the change gives the share of positive rows of that date. 120 submissions give the per-date answer (~57% accuracy), 480 the per-date-and-group answer (~62%), many more get close to the individual rows.
-
-This only works on the public half. The private half, which decides the final ranking, cannot be probed, so those submissions should fall back to their real level on December 15.
-
-**Why do the probers stop around 0.82 and not 1.0?** With exact counts, reaching 1.0 on the public half is possible in theory, but recovering individual rows takes far more submissions than recovering dates or groups, and each extra point of public score buys nothing on the private ranking. I did not try it: it is against the spirit of the challenge and useless for the final score.
-
-## 5. Doubts and limits
-
-- **The probing explanation is a hypothesis.** It fits every observation (exact fractions, unlimited submissions, private top at 55%), but I cannot prove it. December 15 will tell.
 - **Multiple testing.** I tried about fifteen configurations. A false positive at t ≈ 2 is plausible. The two gains I kept are at t ≈ 3 and win on every fold.
 - **The period dominates everything.** The final model ranges from 51.85% to 53.53% depending on the fold, and the public LB (about 60 dates) has a noise of ±1.2 points. Even "always predict up" can hit 53.5% on a lucky 60-date sample.
 - **The test predictions are 60% "up"** (vs 50.7% in train), because the model leans on recent returns and the test dates had a positive recent history. Fine if the regime holds, costly if not.
