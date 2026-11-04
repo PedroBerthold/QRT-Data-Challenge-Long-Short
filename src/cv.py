@@ -55,12 +55,14 @@ class CVResult:
 
 def cv_lgbm(F: pd.DataFrame, y: pd.Series, cols, folds, params=None,
             rounds=500, binary=False, fold_features=None, label="",
-            shap_sample=20000):
+            shap_sample=20000, train_target=None):
     """Train one LightGBM per fold. Returns a CVResult.
 
     fold_features: optional function (train_idx, valid_idx) -> (F_train_extra, F_valid_extra)
     for features that must be computed inside the fold (e.g. target encoding).
     shap_sample: number of validation rows used to compute SHAP values per fold (0 = skip).
+    train_target: optional array used as the training label instead of y (e.g. y / volatility).
+        Accuracy is always computed on the sign of y.
     """
     p = {**LGB_PARAMS, **(params or {})}
     if binary:
@@ -77,7 +79,8 @@ def cv_lgbm(F: pd.DataFrame, y: pd.Series, cols, folds, params=None,
             etr, eva = fold_features(tr, va)
             Ftr = pd.concat([Ftr, etr], axis=1)
             Fva = pd.concat([Fva, eva], axis=1)
-        lab = (yv[tr] > 0).astype(int) if binary else yv[tr]
+        target = yv if train_target is None else np.asarray(train_target)
+        lab = (target[tr] > 0).astype(int) if binary else target[tr]
         model = lgb.train(p, lgb.Dataset(Ftr, lab), rounds)
         pred = model.predict(Fva)
         oof[va] = pred

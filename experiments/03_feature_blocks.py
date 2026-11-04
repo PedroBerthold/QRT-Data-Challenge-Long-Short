@@ -11,7 +11,7 @@ from src.log import log_result
 from src import plots
 
 EXP = "03_feature_blocks"
-USE_TE = False
+USE_TE = True
 
 X, y = train_data()
 seg = load_segments()
