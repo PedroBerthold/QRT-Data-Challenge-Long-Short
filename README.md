@@ -1,4 +1,23 @@
-# QRT Data Challenge: trust or short an allocation?
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/banner-dark.png">
+  <img alt="Trust or short? QRT Data Challenge" src="docs/img/banner-light.png" width="100%">
+</picture>
+
+<br>
+
+![Python](https://img.shields.io/badge/Python-3.12-0e8a62?style=flat-square&logo=python&logoColor=white)
+![LightGBM](https://img.shields.io/badge/LightGBM-gradient%20boosting-0e8a62?style=flat-square)
+![scikit--learn](https://img.shields.io/badge/scikit--learn-CV%20%26%20stats-0e8a62?style=flat-square&logo=scikitlearn&logoColor=white)
+![CV](https://img.shields.io/badge/segment%20CV-52.50%25-121820?style=flat-square)
+![Status](https://img.shields.io/badge/status-done-121820?style=flat-square)
+
+**[The problem](#the-problem)** · **[Validation](#1-validation-first)** · **[Results](#2-what-worked-what-did-not)** · **[The leak](#3-the-leak-89-in-cross-validation-50-on-the-test)** · **[Limits](#4-doubts-and-limits)** · **[Reproduce](#reproduce)**
+
+</div>
+
+## The problem
 
 [Challenge page](https://challengedata.ens.fr/challenges/167) · Challenge Data (ENS / Collège de France), provided by Qube Research & Technologies.
 
@@ -14,10 +33,10 @@ Each row is one portfolio ("allocation") on one day, with its last 20 daily retu
 | Look-ahead leak, measured by cross-validation on the train set | **89.4%** |
 | Same leak applied to the test set (public LB) | 50.08% |
 
-Two things I learned doing this:
-
-1. **There is a look-ahead leak in the training data worth ~89% accuracy**, but it does not exist in the test set. I measured both, then confirmed it on the leaderboard.
-2. **The real signal is small and comes from the allocations, not from the market.** Predicting tomorrow's market direction is a coin flip here (51.8% of days right). The edge comes from telling, on a given day, which allocations will do better than others.
+> [!NOTE]
+> **Two things I learned doing this**
+> 1. **There is a look-ahead leak in the training data worth ~89% accuracy**, but it does not exist in the test set. I measured both, then confirmed it on the leaderboard.
+> 2. **The real signal is small and comes from the allocations, not from the market.** Predicting tomorrow's market direction is a coin flip here (51.8% of days right). The edge comes from telling, on a given day, which allocations will do better than others.
 
 ---
 
@@ -27,6 +46,14 @@ Before any model, I wanted a validation I could trust. Two issues with the stand
 
 - **Rows of the same day are not independent.** All allocations move together with the market. A day is closer to one big bet than to 270 small ones, so all rows of a date always stay in the same fold.
 - **Neighbouring days overlap.** Day t+1 shares 19 of its 20 returns with day t. Dates are shuffled, but I rebuilt the timeline by matching shifted return windows (`RET_2..RET_7` of day t+1 against `RET_1..RET_6` of day t). The train set comes back as **40 chronological segments**, and I cross-validate on whole segments (5 folds of ~105k rows each).
+
+```mermaid
+flowchart LR
+    A["Shuffled dates"] --> B["Match shifted return windows<br/>RET_2..7 of t+1 vs RET_1..6 of t"]
+    B --> C["40 chronological segments"]
+    C --> D["5 folds of whole segments<br/>~105k rows each"]
+    D --> E["Paired test per date<br/>keep a change if t ≥ 2"]
+```
 
 Same model, two ways of measuring it:
 
@@ -52,6 +79,11 @@ Every line is segment CV, compared with the line it builds on.
 | + binary objective (**final model**) | **52.50%** | +0.24 | 5/5 | 2.92 |
 | Target divided by volatility (instead of binary) | 52.44% | +0.18 | 4/5 | 2.06 |
 | Target / vol + strong regularisation | 52.47% | +0.21 | 4/5 | 3.16 |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/results-dark.png">
+  <img alt="Cross-validation accuracy per configuration" src="docs/img/results-light.png" width="100%">
+</picture>
 
 **Why these two worked.**
 - *Target encoding.* Each allocation has a persistent drift: its mean return in one half of the history correlates at 0.75 with the other half. On its own, "predict up if the allocation was up more than half the time" only gives 51.2%, but as an extra feature it adds a small, consistent gain. Fitted strictly inside the training folds (nested out-of-fold), otherwise it leaks the target.
@@ -87,12 +119,13 @@ The two-stage result is the most informative. A model trained on one row per dat
 - one read from the next day (k=1): **88.2%**, from k=2: **91.2%**, decreasing to 71.8% at k=10 (shorter windows, more false matches),
 - best combination of the copies (similarity-weighted mean): **89.4%**.
 
-**Why not 100%?** I expected it to be a clean leak, so this is the part I find most interesting.
-- **The noise flips small returns.** For the 10% of returns closest to zero, accuracy is only 60%. For the 10% largest, 98%. Once the noise is bigger than the return, its sign is a coin flip, and no matching can recover it.
-- **The copies share most of their noise.** Errors from different shifts correlate at 0.63, so averaging 10 noisy copies only takes you from 88% to 89%, not to 100%.
-- **Some matches are wrong**, mostly on short windows (k ≥ 8).
-
-So the ceiling of this leak is around 90%, set by the noise QRT added.
+> [!IMPORTANT]
+> **Why not 100%?** I expected a clean leak, so this is the part I find most interesting.
+> - **The noise flips small returns.** For the 10% of returns closest to zero, accuracy is only 60%. For the 10% largest, 98%. Once the noise is bigger than the return, its sign is a coin flip, and no matching can recover it.
+> - **The copies share most of their noise.** Errors from different shifts correlate at 0.63, so averaging 10 noisy copies only takes you from 88% to 89%, not to 100%.
+> - **Some matches are wrong**, mostly on short windows (k ≥ 8).
+>
+> So the ceiling of this leak is around 90%, set by the noise QRT added.
 
 ![Leak on train](docs/img/leak_train_validation.png)
 
@@ -102,11 +135,15 @@ So the ceiling of this leak is around 90%, set by the noise QRT added.
 - The matched rows belong to the same group as the test row 24.5% of the time (chance with 4 groups: 25%). Same result when matching on volumes instead of returns.
 - Final check: a submission built only from this method scores **50.08%** on the public LB.
 
-The future of the test rows is simply not in the files.
+> [!TIP]
+> The future of the test rows is simply not in the files.
 
 ![Leak on test](docs/img/leak_test_check.png)
 
 ## 4. Doubts and limits
+
+> [!WARNING]
+> Read the scores above with these in mind.
 
 - **Multiple testing.** I tried about fifteen configurations. A false positive at t ≈ 2 is plausible. The two gains I kept are at t ≈ 3 and win on every fold.
 - **The period dominates everything.** The final model ranges from 51.85% to 53.53% depending on the fold, and the public LB (about 60 dates) has a noise of ±1.2 points. Even "always predict up" can hit 53.5% on a lucky 60-date sample.
@@ -122,6 +159,10 @@ python experiments/00_build_segments.py
 SHOW=0 python experiments/01_benchmark.py
 ```
 
+<details>
+<summary><b>All experiment scripts</b></summary>
+<br>
+
 | Script | Question |
 |---|---|
 | `00_build_segments` | Rebuild the timeline of the shuffled dates |
@@ -136,6 +177,8 @@ SHOW=0 python experiments/01_benchmark.py
 | `10_leak_validate` | How much is the look-ahead leak worth on train? |
 | `11_leak_test` | Does it exist on the test set? |
 | `12_leak_submission` | Leak-only submission, to read its real score |
+
+</details>
 
 `QUICK=1` runs any script on 20% of dates as a smoke test. Every script prints fold-by-fold scores, logs to `results/results.csv` and saves figures in `figures/`.
 
