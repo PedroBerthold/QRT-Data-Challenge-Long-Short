@@ -1,0 +1,43 @@
+split,variant,acc,t,share_up
+A,step4_model,51.199,-2.217,0.619
+A,strong_reg,51.423,0.0,0.638
+A,very_strong_reg,51.511,1.092,0.642
+A,reg_250_trees,51.545,1.319,0.645
+A,reg_1000_trees,51.327,-0.96,0.632
+A,reg_depth2,51.587,1.284,0.618
+A,reg_no_date_feats,51.662,2.042,0.602
+A,reg_no_raw_volume,51.269,-1.317,0.633
+A,reg_noTE,51.488,0.605,0.649
+A,reg_monotone_RET1,51.551,2.194,0.63
+A,reg_3seeds,51.392,-0.782,0.633
+A,logit_normalised,51.61,0.749,0.621
+A,blend_reg+logit,51.776,2.711,0.628
+A,rule sign(RET_1),51.549,0.859,0.509
+B,step4_model,52.05,-1.91,0.606
+B,strong_reg,52.285,0.0,0.594
+B,very_strong_reg,52.17,-0.846,0.596
+B,reg_250_trees,52.249,-0.488,0.625
+B,reg_1000_trees,52.15,-0.86,0.567
+B,reg_depth2,52.262,-0.495,0.599
+B,reg_no_date_feats,51.845,-2.187,0.605
+B,reg_no_raw_volume,52.086,-1.446,0.594
+B,reg_noTE,52.006,-1.266,0.601
+B,reg_monotone_RET1,52.193,-1.549,0.598
+B,reg_3seeds,52.175,-1.41,0.596
+B,logit_normalised,51.207,-3.23,0.613
+B,blend_reg+logit,51.791,-2.063,0.602
+B,rule sign(RET_1),51.541,-2.417,0.507
+C,step4_model,51.474,0.682,0.498
+C,strong_reg,51.416,0.0,0.503
+C,very_strong_reg,51.45,1.059,0.492
+C,reg_250_trees,51.532,1.367,0.51
+C,reg_1000_trees,51.311,-1.267,0.508
+C,reg_depth2,51.499,1.135,0.494
+C,reg_no_date_feats,51.473,1.097,0.498
+C,reg_no_raw_volume,51.471,0.536,0.507
+C,reg_noTE,51.231,-1.308,0.497
+C,reg_monotone_RET1,51.38,-0.22,0.497
+C,reg_3seeds,51.486,1.749,0.511
+C,logit_normalised,51.379,0.178,0.541
+C,blend_reg+logit,51.492,0.994,0.521
+C,rule sign(RET_1),51.056,-1.362,0.515

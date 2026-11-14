@@ -111,3 +111,60 @@ def make_te_fold_features(X, y, seg, inner_splits=4):
         return te_tr, te_va
 
     return fold_features
+
+
+# ---- blocks added in step 23 ---------------------------------------------------------------
+def decomp(X):
+    """Split each allocation's recent return into a common part and a specific part.
+
+    The 20 returns of a row are the returns of today's weights on the past 20 days (step 21),
+    so the date's cross-section gives a market path and a group path over the same 20 days.
+    """
+    r = X[RET].values
+    m = X[RET].groupby(X.TS).transform("mean").values
+    gm = X[RET].groupby([X.TS, X.GROUP]).transform("mean").values
+    a, b = r - np.nanmean(r, 1, keepdims=True), m - np.nanmean(m, 1, keepdims=True)
+    beta = np.nansum(a * b, 1) / (np.nansum(b * b, 1) + 1e-12)
+    res = r - beta[:, None] * m
+    o = {"BETA": beta, "MKT_1": m[:, 0], "MKTPART_1": beta * m[:, 0], "RES_1": res[:, 0],
+         "RES_2": res[:, 1], "RES_5": np.nanmean(res[:, :5], 1), "RES_20": np.nanmean(res, 1),
+         "GRP_1": gm[:, 0], "GRP_5": np.nanmean(gm[:, :5], 1),
+         "GREL_1": r[:, 0] - gm[:, 0], "GREL_5": np.nanmean(r[:, :5] - gm[:, :5], 1)}
+    return pd.DataFrame(o, index=X.index)
+
+
+def normalised(X):
+    """Level-free versions of the main features (robust to a change of volatility or turnover regime)."""
+    r = X[RET].values
+    vol = np.nanstd(r, 1)
+    disp = pd.Series(vol, index=X.index).groupby(X.TS).transform("mean").values + 1e-9
+    o = {f"NRET_{j + 1}": r[:, j] / disp for j in range(5)}
+    o["NAVG_20"] = np.nanmean(r, 1) / disp
+    o["OWNSR_1"] = r[:, 0] / (vol + 1e-9)
+    o["VOL_REL"] = vol / disp
+    o["TURN_RANK"] = X.MEDIAN_DAILY_TURNOVER.groupby(X.TS).rank(pct=True).values
+    o["TURN_REL"] = (X.MEDIAN_DAILY_TURNOVER / X.MEDIAN_DAILY_TURNOVER.groupby(X.TS).transform("median")).values
+    return pd.DataFrame(o, index=X.index)
+
+
+def context(X):
+    """Group of the allocation and which part of the universe trades that day."""
+    o = pd.DataFrame(index=X.index)
+    o["GROUP_ID"] = pd.to_numeric(X.GROUP.astype(str).str.extract(r"(\d+)")[0], errors="coerce").values
+    o["N_ALLOC_DATE"] = X.TS.map(X.TS.value_counts()).values
+    o["N_GROUPS_DATE"] = X.GROUP.groupby(X.TS).transform("nunique").values
+    return o
+
+
+def volume(X):
+    """Signed-volume summaries (SIGNED_VOLUME_1 is mostly missing, so use the first available lag)."""
+    v, r = X[VOL].values, X[RET].values
+    first = np.argmax(~np.isnan(v), 1)
+    o = {"SV_NMISS": np.isnan(v).sum(1), "SV_FIRST_LAG": first,
+         "SV_LAST": v[np.arange(len(v)), first], "SV_MEAN_20": np.nanmean(v, 1), "SV_STD_20": np.nanstd(v, 1),
+         "SV_ABS_20": np.nanmean(np.abs(v), 1), "SV_MEAN_5": np.nanmean(v[:, :6], 1),
+         "SVRET_20": np.nanmean(np.sign(v) * r, 1), "SV_UPFRAC": np.nanmean(v > 0, 1)}
+    return pd.DataFrame(o, index=X.index)
+
+
+BLOCKS.update({"decomp": decomp, "normalised": normalised, "context": context, "volume": volume})

@@ -150,6 +150,42 @@ The two-stage result is the most informative. A model trained on one row per dat
 - **The test predictions are 60% "up"** (vs 50.7% in train), because the model leans on recent returns and the test dates had a positive recent history. Fine if the regime holds, costly if not.
 - **The hidden test period is different.** The benchmark loses 1.4 points between CV and public LB, and so does my model. The gain over the benchmark holds (+0.38 in CV, +0.20 on the LB), but the absolute level depends on the period.
 
+## 5. Follow-up: the timeline, and what survives the passage of time
+
+Second pass (branch `2026-11-14`, scripts `20` to `28`). Protocol: one sixth of the segments is a lockbox scored once; the rest is the research set (5-fold segment CV, 52.19% for the step-4 model).
+
+**The 20 returns of a row are a backcast, not a track record.** Matching dates at the date level for shifts of 1 to 19 days (`21_timeline`), the similarity between a day and its k-th successor decays from 0.99 (k=1) to 0.66 (k=19). The same past day does not show the same return when seen from two dates: `RET_k` is the return of *today's weights* on the past days, and the weights turn over by about 9% a day. This, more than added noise, is why the leak of section 3 stops at 89%.
+
+**The 40 segments chain into 4 blocks** covering 2,470 trading days (`22_global_timeline`): 924 extra links, 9 inconsistent out of 888 redundant ones. Most breaks came from days where only some groups trade.
+
+**The test is most likely a later period, sampled about once a month.** No test date links to any other date at any shift. 120 isolated dates at least 20 days apart need about ten years, the length of the train set. Their turnover profile is closest to the late train segments, their turnover is lower still (the downward trend continues), and two allocations appear only there.
+
+**The signal decays along the timeline.** `sign(RET_1)` alone is right 53.5 to 54.3% of the time in the first third of the history and 51.1 to 51.6% in the last half. The correlation between `RET_1` and the target goes from 0.13 to 0.02 for group 3 while it rises for group 1.
+
+**Forward validation is one point below segment CV** (`26_forward`, train on the past, score on the future):
+
+| Split | Step-4 model | Strong regularisation | `sign(RET_1)` | Always up |
+|---|---|---|---|---|
+| A: first 60% -> last 40% | 51.20% | 51.42% (t = 2.2) | 51.55% | 50.34% |
+| B: all but the last block -> last block | 52.05% | 52.29% (t = 1.9) | 51.54% | 49.84% |
+| C: first 40% -> next 25% | 51.47% | 51.42% | 51.06% | 51.25% |
+
+This is the honest expectation for the leaderboard, and it matches the 51% observed there. Segment CV trains on both sides of every validation block, which the test does not allow.
+
+**What was tested and rejected** (segment CV on all dates and on the late era, paired t per date):
+
+| Idea | Result |
+|---|---|
+| Train on a subset of dates: random, test-like, or test-likeness weights (`20`) | −0.4 to −0.9 (t from −3.4 to −5.7) |
+| Weight recent dates more, or drop old ones (`26`, forward) | −0.1 to −0.5 on every split |
+| Common / specific split of the recent return, level-free features, group and universe context (`23`) | within ±0.1 |
+| Signed-volume summaries (`23`) | +0.03 (t = 2.1 in CV, 1.0 forward): not kept, one of about 30 tests |
+| More capacity (`23`) | −0.22 |
+| Group factor model: PCA factors per group, own-lag prediction, denoised `RET_1` (`24`, `25`) | −0.13. Group means are predictable at date level (correlation 0.19 for group 1) but the row's own `RET_1` already carries it |
+| Fewer trees, depth 2, monotone in `RET_1`, no date-level features, logistic blend (`27`, forward) | all within noise of strong regularisation |
+
+**Retained:** same features and target encoding as step 4, with `min_data_in_leaf=2000`, `feature_fraction=0.5`, bagging 0.7, 5 seeds (`28_final`). Equal to step 4 in segment CV (52.19%), +0.14 on average forward, 53.62% against 53.55% on the lockbox (paired t = 2.3). Its test predictions agree with the step-4 model on 94% of rows.
+
 ## Reproduce
 
 ```bash
@@ -177,6 +213,12 @@ SHOW=0 python experiments/01_benchmark.py
 | `10_leak_validate` | How much is the look-ahead leak worth on train? |
 | `11_leak_test` | Does it exist on the test set? |
 | `12_leak_submission` | Leak-only submission, to read its real score |
+| `20_train_subset` | Is a well-chosen part of the dates better than all of them? |
+| `21_timeline`, `22_global_timeline` | Date matching at shifts 1 to 19, chaining of the segments, place of the test |
+| `23_feature_and_era` | New feature blocks, era weights, capacity |
+| `24_leadlag_diag`, `25_group_factors` | Group lead-lag and factor model |
+| `26_forward`, `27_robustness` | Forward-in-time validation, regularisation frontier |
+| `28_final` | Final model, lockbox, submission |
 
 </details>
 
