@@ -186,6 +186,8 @@ This is the honest expectation for the leaderboard, and it matches the 51% obser
 
 **Retained:** same features and target encoding as step 4, with `min_data_in_leaf=2000`, `feature_fraction=0.5`, bagging 0.7, 5 seeds (`28_final`). Equal to step 4 in segment CV (52.19%), +0.14 on average forward, 53.62% against 53.55% on the lockbox (paired t = 2.3). Its test predictions agree with the step-4 model on 94% of rows.
 
+**Public leaderboard: 51.03%** (step-4 model 50.99%, benchmark 50.79%). The gain over step 4 is far inside the leaderboard noise; the level matches the forward validation (51.2 to 52.3%), not the segment CV (52.2%).
+
 ## Reproduce
 
 ```bash
